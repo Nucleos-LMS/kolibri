@@ -1,0 +1,37 @@
+jobs:
+  build-and-push:
+    executor: gcp-gcr/default
+    steps:
+      - checkout
+      - gcp-gcr/gcr-auth:
+          registry-url: ${GCR_REGISTRY}
+      - gcp-gcr/build-image:
+          dockerfile: Dockerfile
+          image: nucleos/$CIRCLE_PROJECT_REPONAME
+          no_output_timeout: 20m
+          registry-url: ${GCR_REGISTRY}
+          tag: ${CIRCLE_SHA1:0:7}
+      - gcp-gcr/push-image:
+          digest-path: /tmp/digest.txt
+          image: nucleos/$CIRCLE_PROJECT_REPONAME
+          registry-url: ${GCR_REGISTRY}
+          tag: ${CIRCLE_SHA1:0:7}
+      - gcp-gcr/tag-image:
+          image: nucleos/$CIRCLE_PROJECT_REPONAME
+          registry-url: ${GCR_REGISTRY}
+          source-tag: ${CIRCLE_SHA1:0:7}
+          target-tag: $CIRCLE_BRANCH
+      - gcp-gcr/tag-image:
+          image: nucleos/$CIRCLE_PROJECT_REPONAME
+          registry-url: ${GCR_REGISTRY}
+          source-tag: ${CIRCLE_SHA1:0:7}
+          target-tag: $CIRCLE_SHA1
+orbs:
+  gcp-gcr: circleci/gcp-gcr@0.15.0
+version: 2.1
+workflows:
+  build-and-push-to-artifacts-registry:
+    jobs:
+      - build-and-push:
+          name: Build and push to GCR
+          context: GCP_CENTRAL
